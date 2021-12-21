@@ -40,10 +40,10 @@ void WavPlayer_SetVolume(uint8_t Vol);
 void WavPlayer_Mute(void);
 void WavPlayer_Unmute(void);
 const char* WavPlayer_ListAudioFiles(void);
-
-void WavPlayer_Update(void);
-
+void WavPlayer_ChooseTheFirstAudioFile(void);
 bool WavPlayer_IsFinished(void);
+
+
 
 #endif
 //---------------------------------------------------------------------------//

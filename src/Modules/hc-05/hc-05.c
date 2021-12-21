@@ -73,7 +73,7 @@ HC05_Update(void)
 {
   if(!gIsReceived) return;
   gIsReceived = false;
-  
+
   uint8_t Vol;
 
   char FirstChar = (char)gData[0];
@@ -197,7 +197,10 @@ Uart_IDLE_IRQHandler(UART_HandleTypeDef *huart)
   gDataLen = DATA_MAX_SIZE - huart->hdmarx->Instance->NDTR;
   //null terminate
   gData[gDataLen] = '\0';
-  // Start DMA receive
+
+  HC05_Update();
+
+  // Start another DMA receive transfer
   if(HAL_OK != HAL_UART_Receive_DMA(gUartHandle, gData, DATA_MAX_SIZE))
     {
     }

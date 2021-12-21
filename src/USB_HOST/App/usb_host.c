@@ -26,7 +26,7 @@
 #include "usbh_msc.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "fatfs.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -106,19 +106,25 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
   /* USER CODE BEGIN CALL_BACK_1 */
   switch(id)
   {
-  case HOST_USER_SELECT_CONFIGURATION:
-  break;
 
   case HOST_USER_DISCONNECTION:
-  Appli_state = APPLICATION_DISCONNECT;
+    Appli_state = APPLICATION_DISCONNECT;
+    HAL_GPIO_WritePin(GPIOD, GREEN_LED_Pin, GPIO_PIN_RESET);
+    //unregister any registered filesystem
+    f_mount(NULL, (TCHAR const*)"", 0);
   break;
 
   case HOST_USER_CLASS_ACTIVE:
-  Appli_state = APPLICATION_READY;
+    Appli_state = APPLICATION_READY;
+    if(f_mount(&USBHFatFS, (const TCHAR*)USBHPath, 0) == FR_OK)
+      {
+	HAL_GPIO_WritePin(GPIOD, GREEN_LED_Pin, GPIO_PIN_SET);
+	App_Init();
+      }
   break;
 
   case HOST_USER_CONNECTION:
-  Appli_state = APPLICATION_START;
+    Appli_state = APPLICATION_START;
   break;
 
   default:

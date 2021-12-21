@@ -32,12 +32,10 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-extern ApplicationTypeDef Appli_state;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define WAV_FILE1 "sound1.wav"
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,9 +54,6 @@ DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_uart4_tx;
 
 /* USER CODE BEGIN PV */
-bool gIsFlashDriveMounted=0;
-bool gPauseResumeToggle=0;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,8 +66,7 @@ static void MX_UART4_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-void USB_Update(void);
-void Input_Update(void);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -115,13 +109,6 @@ int main(void)
   MX_USB_HOST_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-  WavPlayerConfig_t Config = {0};
-  Config.Muted = false;
-  Config.Vol = 180;
-  Config.i2ch = hi2c1;
-  WavPlayer_Init(&Config);
-  I2s_SetHandle(&hi2s3);
-  HC05_Init(&huart4);
 
   /* USER CODE END 2 */
 
@@ -133,12 +120,6 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-    USB_Update();
-    if(gIsFlashDriveMounted)
-      {
-	WavPlayer_Update();
-	HC05_Update();
-      }
   }
   /* USER CODE END 3 */
 }
@@ -299,13 +280,13 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
   /* DMA1_Stream4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
 }
@@ -352,30 +333,27 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void 
-USB_Update(void)
+void
+App_Init(void)
 {
-  if(Appli_state == APPLICATION_START)
+  static uint8_t isInitialized = 0;
+  if(isInitialized == 0)
     {
-      HAL_GPIO_WritePin(GPIOD, GREEN_LED_Pin, GPIO_PIN_SET);
-    }
-  else if(Appli_state == APPLICATION_DISCONNECT)
-    {
-      HAL_GPIO_WritePin(GPIOD, GREEN_LED_Pin, GPIO_PIN_RESET);
-      //unregister any registered filesystem
-      f_mount(NULL, (TCHAR const*)"", 0); 
-      gIsFlashDriveMounted = false;
-    }
-  else if(Appli_state == APPLICATION_READY)
-    {
-      if(!gIsFlashDriveMounted)
-      {
-        f_mount(&USBHFatFS, (const TCHAR*)USBHPath, 0);
-        gIsFlashDriveMounted = true;
-      }
+      WavPlayerConfig_t Config = {0};
+      Config.Muted = false;
+      Config.Vol = 180;
+      Config.i2ch = hi2c1;
+      WavPlayer_Init(&Config);
+
+      I2s_SetHandle(&hi2s3);
+
+      HC05_Init(&huart4);
+
+      WavPlayer_ChooseTheFirstAudioFile();
+
+      isInitialized = 1;
     }
 }
-
 
 /* USER CODE END 4 */
 

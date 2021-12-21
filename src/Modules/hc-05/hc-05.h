@@ -26,7 +26,6 @@ extern "C" {
 #endif
 
 void HC05_Init(UART_HandleTypeDef* UartHandle);
-void HC05_Update(void);
 void Uart_IDLE_IRQHandler(UART_HandleTypeDef *huart);
 
 #ifdef __cplusplus

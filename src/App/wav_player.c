@@ -37,11 +37,15 @@ typedef struct
 
 typedef enum
 {
-  WAV_PLAYER_STATE_IDLE=0,
-  WAV_PLAYER_STATE_HALF_READ,
-  WAV_PLAYER_STATE_FULL_READ,
-  WAV_PLAYER_STATE_EOF,
-}WavPlayerState_t;
+  DMA_STATE_HALF_TRANSFER,
+  DMA_STATE_FULL_TRANSFER,
+}DmaState_t;
+
+typedef enum
+{
+  DMA_EVENT_HALF_TRANSFER,
+  DMA_EVENT_FULL_TRANSFER,
+}DmaEvent_t;
 
 //---------------------------------------------------------------------------//
 //variable definitions
@@ -53,11 +57,10 @@ static bool gIsFileChosen = false;
 static bool gIsFinished;
 static uint8_t gAudioBuffer[DMA_BUFFER_SIZE];
 static UINT gFileReadBytesLen = 0;
-static volatile WavPlayerState_t gWavPlayerState = WAV_PLAYER_STATE_IDLE;
+static volatile DmaState_t gDmaState = DMA_STATE_FULL_TRANSFER;
 static uint8_t gFilesNames[DMA_BUFFER_SIZE];
 
 static WavPlayerConfig_t gConfig;
-
 
 static DIR gDir;
 static FILINFO gFileInfo;
@@ -69,6 +72,7 @@ extern I2C_HandleTypeDef hi2c1;
 //---------------------------------------------------------------------------//
 //Function declarations
 static void WavPlayer_PlayFromBeginning(void);
+static void WavPlayer_DmaUpdate(DmaEvent_t);
 //---------------------------------------------------------------------------//
 //Function definitions
 
@@ -86,7 +90,6 @@ WavPlayer_Reset(void)
   gFileRemainingSize = 0;
   gFileReadBytesLen = 0;
   gIsFinished = true;
-  gWavPlayerState = WAV_PLAYER_STATE_IDLE;
 }
 
 static void 
@@ -120,19 +123,19 @@ WavPlayer_Next(void)
   do {
     if (strcmp(PrevFileInfo.fname, CurrFileName) == 0)
       {
-	f_closedir(&PrevFileDir);
-	WavPlayer_PlayAudioFile(gFileInfo.fname);
-	return true;
+        f_closedir(&PrevFileDir);
+        WavPlayer_PlayAudioFile(gFileInfo.fname);
+        return true;
       }
 
-  fr = f_findnext(&gDir, &gFileInfo);
-  if(!gFileInfo.fname[0])
-    {
-      f_rewinddir(&gDir);
-      fr = f_findnext(&gDir, &gFileInfo);
-    }
+    fr = f_findnext(&gDir, &gFileInfo);
+    if(!gFileInfo.fname[0])
+      {
+        f_rewinddir(&gDir);
+        fr = f_findnext(&gDir, &gFileInfo);
+      }
 
-  fr = f_findnext(&PrevFileDir, &PrevFileInfo);
+    fr = f_findnext(&PrevFileDir, &PrevFileInfo);
 
   } while(fr == FR_OK && PrevFileInfo.fname[0]); // While the previous pointer is not rewinded
 
@@ -229,7 +232,7 @@ WavPlayer_SetVolume(uint8_t Vol)
  * 
  */
 void
-WavPlayer_Update(void)
+WavPlayer_ChooseTheFirstAudioFile(void)
 {
   /* Search for a wav file to play */
   if(!gIsFileChosen)
@@ -239,54 +242,12 @@ WavPlayer_Update(void)
       fr = f_findfirst(&gDir, &gFileInfo, "", "*.wav");
 
       if (fr == FR_OK && gFileInfo.fname[0])
-	{
-	  gIsFileChosen = true;
-	  WavPlayer_PlayAudioFile(gFileInfo.fname);
-	  WavPlayer_Pause();
-	}
+        {
+          gIsFileChosen = true;
+          WavPlayer_PlayAudioFile(gFileInfo.fname);
+          WavPlayer_Pause();
+        }
     }
-
-  switch(gWavPlayerState)
-  {
-    case WAV_PLAYER_STATE_IDLE:
-      break;
-
-    case WAV_PLAYER_STATE_HALF_READ:
-      gFileReadBytesLen = 0;
-      gWavPlayerState = WAV_PLAYER_STATE_IDLE;
-      f_read (&gWavFile, &gAudioBuffer[0], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
-      if(gFileRemainingSize > (DMA_BUFFER_SIZE / 2))
-        {
-          gFileRemainingSize -= gFileReadBytesLen;
-        }
-      else
-        {
-          gFileRemainingSize = 0;
-          gWavPlayerState = WAV_PLAYER_STATE_EOF;
-        }
-      break;
-
-    case WAV_PLAYER_STATE_FULL_READ:
-      gFileReadBytesLen = 0;
-      gWavPlayerState = WAV_PLAYER_STATE_IDLE;
-      f_read (&gWavFile, &gAudioBuffer[DMA_BUFFER_SIZE/2], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
-      if(gFileRemainingSize > (DMA_BUFFER_SIZE / 2))
-        {
-          gFileRemainingSize -= gFileReadBytesLen;
-        }
-      else
-        {
-          gFileRemainingSize = 0;
-          gWavPlayerState = WAV_PLAYER_STATE_EOF;
-        }
-      break;
-
-    case WAV_PLAYER_STATE_EOF:
-      //autoplay feature
-      WavPlayer_Next();
-      gWavPlayerState = WAV_PLAYER_STATE_IDLE;
-      break;
-  }
 }
 
 /**
@@ -399,13 +360,56 @@ WavPlayer_ListAudioFiles(void)
   return (const char*) gFilesNames;
 }
 
+static void 
+WavPlayer_DmaUpdate(DmaEvent_t event)
+{
+  switch(gDmaState)
+  {
+    case DMA_STATE_HALF_TRANSFER:
+      if (event != DMA_EVENT_FULL_TRANSFER) return;
+      gFileReadBytesLen = 0;
+      f_read (&gWavFile, &gAudioBuffer[DMA_BUFFER_SIZE/2], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
+
+      if(gFileRemainingSize > (DMA_BUFFER_SIZE / 2))
+        {
+          gFileRemainingSize -= gFileReadBytesLen;
+        }
+      else
+        {
+          gFileRemainingSize = 0;
+          WavPlayer_Next();
+        }
+      gDmaState = DMA_STATE_FULL_TRANSFER;
+      break;
+
+    case DMA_STATE_FULL_TRANSFER:
+      if (event != DMA_EVENT_HALF_TRANSFER) return;
+      gFileReadBytesLen = 0;
+      f_read (&gWavFile, &gAudioBuffer[0], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
+      if(gFileRemainingSize > (DMA_BUFFER_SIZE / 2))
+        {
+          gFileRemainingSize -= gFileReadBytesLen;
+        }
+      else
+        {
+          gFileRemainingSize = 0;
+          WavPlayer_Next();
+        }
+      gDmaState = DMA_STATE_HALF_TRANSFER;
+      break;
+      default:
+      //DO NOTHING
+      break;
+  }
+}
+
 /**
  * @brief Half DMA transfer callback. It should load the first half of the buffer.
  */
 void
 I2s_HalfTransferCallback(void)
 {
-  gWavPlayerState = WAV_PLAYER_STATE_HALF_READ;
+  WavPlayer_DmaUpdate(DMA_EVENT_HALF_TRANSFER);
 }
 
 /**
@@ -414,7 +418,7 @@ I2s_HalfTransferCallback(void)
 void
 I2s_FullTransferCallback(void)
 {
-  gWavPlayerState = WAV_PLAYER_STATE_FULL_READ;
+  WavPlayer_DmaUpdate(DMA_EVENT_FULL_TRANSFER);
 }
 
 //---------------------------------------------------------------------------//
