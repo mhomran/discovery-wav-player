@@ -29,19 +29,27 @@ typedef struct {
 //---------------------------------------------------------------------------//
 //functions prototypes
 
+// init functions
 void WavPlayer_Init(WavPlayerConfig_t* Config);
+void WavPlayer_ChooseTheFirstAudioFile(void);
+
+// player control
 bool WavPlayer_PlayAudioFile(const char* filePath);
 bool WavPlayer_Next(void);
 bool WavPlayer_Previous(void);
+
 void WavPlayer_Stop(void);
 void WavPlayer_Pause(void);
 void WavPlayer_Resume(void);
+
+// Sound control
 void WavPlayer_SetVolume(uint8_t Vol);
 void WavPlayer_Mute(void);
 void WavPlayer_Unmute(void);
+
+// Audio files control
 const char* WavPlayer_ListAudioFiles(void);
-void WavPlayer_ChooseTheFirstAudioFile(void);
-bool WavPlayer_IsFinished(void);
+
 
 
 

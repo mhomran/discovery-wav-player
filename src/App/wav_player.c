@@ -47,17 +47,30 @@ typedef enum
   DMA_EVENT_FULL_TRANSFER,
 }DmaEvent_t;
 
+typedef enum
+{
+  PLAYER_STATE_IDLE,
+  PLAYER_STATE_READY,
+  PLAYER_STATE_PLAYING,
+  PLAYER_STATE_PAUSED,
+} PlayerState_t;
+
+typedef enum
+{
+  PLAYER_EVENT_FILE_IS_CHOSEN,
+  PLAYER_EVENT_STOP,
+  PLAYER_EVENT_RESUME,
+  PLAYER_EVENT_PAUSE,
+} PlayerEvent_t;
+
 //---------------------------------------------------------------------------//
 //variable definitions
 static FIL gWavFile;
 static uint32_t gFileLength;
 static uint32_t gFileRemainingSize = 0;
 static uint32_t gSamplingFreq;
-static bool gIsFileChosen = false;
-static bool gIsFinished;
 static uint8_t gAudioBuffer[DMA_BUFFER_SIZE];
 static UINT gFileReadBytesLen = 0;
-static volatile DmaState_t gDmaState = DMA_STATE_FULL_TRANSFER;
 static uint8_t gFilesNames[DMA_BUFFER_SIZE];
 
 static WavPlayerConfig_t gConfig;
@@ -65,14 +78,18 @@ static WavPlayerConfig_t gConfig;
 static DIR gDir;
 static FILINFO gFileInfo;
 
+static volatile PlayerState_t gPlayerState = PLAYER_STATE_IDLE;
 //---------------------------------------------------------------------------//
 //variable declarations
 extern I2C_HandleTypeDef hi2c1;
 
 //---------------------------------------------------------------------------//
 //Function declarations
-static void WavPlayer_PlayFromBeginning(void);
 static void WavPlayer_DmaUpdate(DmaEvent_t);
+static PlayerState_t WavPlayer_PlayerUpdate(PlayerEvent_t);
+
+inline static void WavPlayer_StartAudioCodec(void);
+inline static void WavPlayer_StopAudioCodec(void);
 //---------------------------------------------------------------------------//
 //Function definitions
 
@@ -80,8 +97,6 @@ void
 WavPlayer_Init(WavPlayerConfig_t* Config)
 {
   gConfig = *Config;
-  gIsFinished = true;
-  gIsFileChosen = false;
 }
 
 static void 
@@ -89,10 +104,9 @@ WavPlayer_Reset(void)
 {
   gFileRemainingSize = 0;
   gFileReadBytesLen = 0;
-  gIsFinished = true;
 }
 
-static void 
+inline static void 
 WavPlayer_StartAudioCodec(void) 
 {
   CS43L22Config_t config = {0};
@@ -102,6 +116,13 @@ WavPlayer_StartAudioCodec(void)
   CS43L22_Init(&config);
 }
 
+inline static void 
+WavPlayer_StopAudioCodec(void)
+{
+  CS43L22_Stop();
+}
+
+
 bool
 WavPlayer_Next(void)
 {
@@ -110,7 +131,7 @@ WavPlayer_Next(void)
   DIR PrevFileDir;
   TCHAR CurrFileName[13];
 
-  if(!gIsFileChosen) return false;
+  if(gPlayerState == PLAYER_STATE_IDLE) return false;
 
   strcpy(CurrFileName, gFileInfo.fname);
 
@@ -150,7 +171,7 @@ WavPlayer_Previous(void)
   DIR NextFileDir;
   TCHAR	CurrFileName[13];
 
-  if(!gIsFileChosen) return false;
+  if(gPlayerState == PLAYER_STATE_IDLE) return false;
 
   strcpy(CurrFileName, gFileInfo.fname);
 
@@ -163,9 +184,9 @@ WavPlayer_Previous(void)
   do {
     if (strcmp(NextFileInfo.fname, CurrFileName) == 0)
       {
-	f_closedir(&NextFileDir);
-	WavPlayer_PlayAudioFile(gFileInfo.fname);
-	return true;
+        f_closedir(&NextFileDir);
+        WavPlayer_PlayAudioFile(gFileInfo.fname);
+        return true;
       }
 
   fr = f_findnext(&NextFileDir, &NextFileInfo);
@@ -192,6 +213,8 @@ WavPlayer_Previous(void)
 bool 
 WavPlayer_PlayAudioFile(const char* FilePath)
 {
+  if(gPlayerState == PLAYER_STATE_IDLE) return false;
+  
   WavHeader_t wavHeader;
   FIL TobePlayed;
   if(f_open(&TobePlayed, FilePath, FA_READ) != FR_OK)
@@ -199,23 +222,27 @@ WavPlayer_PlayAudioFile(const char* FilePath)
       return false;
     }
 
-  if(gIsFileChosen)
-    {
-      CS43L22_Stop();
-      I2s_Stop();
-      f_close(&gWavFile);
-    }
+  WavPlayer_StopAudioCodec();
+  I2s_StopTransfer();
+  f_close(&gWavFile);
+    
   memcpy(&gWavFile, &TobePlayed, sizeof(FIL));
   strcpy(gFileInfo.fname, FilePath);
-
-  gIsFileChosen = true;
+  WavPlayer_Reset();
 
   f_read(&gWavFile, &wavHeader, sizeof(wavHeader), &gFileReadBytesLen);
   gFileLength = wavHeader.FileSize;
   gSamplingFreq = wavHeader.SampleRate;
 
-  WavPlayer_Reset();
-  WavPlayer_PlayFromBeginning();
+  f_lseek(&gWavFile, sizeof(WavHeader_t));
+  f_read (&gWavFile, &gAudioBuffer[0], DMA_BUFFER_SIZE, &gFileReadBytesLen);
+  gFileRemainingSize = gFileLength - gFileReadBytesLen;
+
+  I2s_Init(gSamplingFreq);
+  I2s_StartNewTransfer((uint16_t *)&gAudioBuffer[0], DMA_BUFFER_SIZE);
+  WavPlayer_StartAudioCodec();
+
+  WavPlayer_Resume();
   
   return true;
 }
@@ -228,46 +255,28 @@ WavPlayer_SetVolume(uint8_t Vol)
 }
 
 /**
- * @brief WAV player task (main) function
+ * @brief Open the root directory and choose the first 
+ * audio file.
  * 
  */
 void
 WavPlayer_ChooseTheFirstAudioFile(void)
 {
+  FRESULT fr;
+
+  if(gPlayerState != PLAYER_STATE_IDLE) return;
+
   /* Search for a wav file to play */
-  if(!gIsFileChosen)
+  fr = f_findfirst(&gDir, &gFileInfo, "", "*.wav");
+
+  if (fr == FR_OK && gFileInfo.fname[0])
     {
-      FRESULT fr;
-
-      fr = f_findfirst(&gDir, &gFileInfo, "", "*.wav");
-
-      if (fr == FR_OK && gFileInfo.fname[0])
-        {
-          gIsFileChosen = true;
-          WavPlayer_PlayAudioFile(gFileInfo.fname);
-          WavPlayer_Pause();
-        }
+      WavPlayer_PlayerUpdate(PLAYER_EVENT_FILE_IS_CHOSEN);
+      WavPlayer_PlayAudioFile(gFileInfo.fname);
+      WavPlayer_Pause();
     }
 }
 
-/**
- * @brief WAV File Play
- */
-static void
-WavPlayer_PlayFromBeginning(void)
-{
-  gIsFinished = false;
-
-  I2s_Init(gSamplingFreq);
-
-  WavPlayer_StartAudioCodec();
-
-  f_lseek(&gWavFile, sizeof(WavHeader_t));
-  f_read (&gWavFile, &gAudioBuffer[0], DMA_BUFFER_SIZE, &gFileReadBytesLen);
-  gFileRemainingSize = gFileLength - gFileReadBytesLen;
-
-  I2s_Play((uint16_t *)&gAudioBuffer[0], DMA_BUFFER_SIZE);
-}
 
 void
 WavPlayer_Mute(void)
@@ -286,52 +295,42 @@ WavPlayer_Unmute(void)
 void
 WavPlayer_Stop(void)
 {
-  if(gIsFileChosen)
-    {
-      CS43L22_Stop();
-      I2s_Stop();
+  if (gPlayerState != PLAYER_STATE_PLAYING && 
+  gPlayerState != PLAYER_STATE_PAUSED) return;
 
-      WavPlayer_Reset();
-      WavPlayer_PlayFromBeginning();
-      WavPlayer_Pause();
-    }
+  CS43L22_Stop();
+  I2s_Pause();
+
+  WavPlayer_Reset();
+
+  f_lseek(&gWavFile, sizeof(WavHeader_t));
+  f_read (&gWavFile, &gAudioBuffer[0], DMA_BUFFER_SIZE, &gFileReadBytesLen);
+  gFileRemainingSize = gFileLength - gFileReadBytesLen;
+
+  WavPlayer_PlayerUpdate(PLAYER_EVENT_STOP);
 }
 
 void
 WavPlayer_Pause(void)
 {
-  if(gIsFileChosen)
-    {
-      CS43L22_Stop();
-      I2s_Pause();
-    }
+  if (gPlayerState != PLAYER_STATE_PLAYING) return;
+ 
+  CS43L22_Stop();
+  I2s_Pause();
+
+  WavPlayer_PlayerUpdate(PLAYER_EVENT_PAUSE);
 }
 
 void
 WavPlayer_Resume(void)
 {
-  if(gIsFileChosen)
-    {
-      if(gIsFinished)
-      {
-        CS43L22_Stop();
-        I2s_Stop();
+  if (gPlayerState != PLAYER_STATE_PAUSED &&
+  gPlayerState != PLAYER_STATE_READY) return;
 
-        WavPlayer_Reset();
-        WavPlayer_PlayFromBeginning();
-      }
-    else
-      {
-        WavPlayer_StartAudioCodec();
-        I2s_Resume();
-      }
-    }
-}
-
-bool
-WavPlayer_IsFinished(void)
-{
-  return gIsFinished;
+  WavPlayer_StartAudioCodec();
+  I2s_Resume();
+    
+  WavPlayer_PlayerUpdate(PLAYER_EVENT_RESUME);
 }
 
 const char*
@@ -363,12 +362,14 @@ WavPlayer_ListAudioFiles(void)
 static void 
 WavPlayer_DmaUpdate(DmaEvent_t event)
 {
+  static volatile DmaState_t gDmaState = DMA_STATE_FULL_TRANSFER;
+  FRESULT fr;
   switch(gDmaState)
   {
     case DMA_STATE_HALF_TRANSFER:
       if (event != DMA_EVENT_FULL_TRANSFER) return;
       gFileReadBytesLen = 0;
-      f_read (&gWavFile, &gAudioBuffer[DMA_BUFFER_SIZE/2], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
+      fr = f_read (&gWavFile, &gAudioBuffer[DMA_BUFFER_SIZE/2], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
 
       if(gFileRemainingSize > (DMA_BUFFER_SIZE / 2))
         {
@@ -385,7 +386,7 @@ WavPlayer_DmaUpdate(DmaEvent_t event)
     case DMA_STATE_FULL_TRANSFER:
       if (event != DMA_EVENT_HALF_TRANSFER) return;
       gFileReadBytesLen = 0;
-      f_read (&gWavFile, &gAudioBuffer[0], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
+      fr = f_read (&gWavFile, &gAudioBuffer[0], DMA_BUFFER_SIZE/2, &gFileReadBytesLen);
       if(gFileRemainingSize > (DMA_BUFFER_SIZE / 2))
         {
           gFileRemainingSize -= gFileReadBytesLen;
@@ -403,6 +404,36 @@ WavPlayer_DmaUpdate(DmaEvent_t event)
   }
 }
 
+static PlayerState_t 
+WavPlayer_PlayerUpdate(PlayerEvent_t event)
+{
+  switch(gPlayerState)
+  {
+    case PLAYER_STATE_IDLE:
+      if(event == PLAYER_EVENT_FILE_IS_CHOSEN) gPlayerState = PLAYER_STATE_READY;
+    break;
+
+    case PLAYER_STATE_READY:
+      if(event == PLAYER_EVENT_RESUME) gPlayerState = PLAYER_STATE_PLAYING;
+    break;
+
+    case PLAYER_STATE_PLAYING:
+      if(event == PLAYER_EVENT_STOP) gPlayerState = PLAYER_STATE_READY;
+      else if(event == PLAYER_EVENT_PAUSE) gPlayerState = PLAYER_STATE_PAUSED;
+    break;
+
+    case PLAYER_STATE_PAUSED:
+      if(event == PLAYER_EVENT_RESUME) gPlayerState = PLAYER_STATE_PLAYING;
+      else if(event == PLAYER_EVENT_STOP) gPlayerState = PLAYER_STATE_READY;
+    break;
+
+    default:
+      // DO NOTHING
+    break;
+  }
+
+  return gPlayerState;
+}
 /**
  * @brief Half DMA transfer callback. It should load the first half of the buffer.
  */

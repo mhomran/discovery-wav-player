@@ -99,7 +99,7 @@ I2s_Init(uint32_t SamplingRate)
  * @brief Start I2S DMA transfer
  */
 void 
-I2s_Play(uint16_t* pDataBuf, uint32_t len)
+I2s_StartNewTransfer(uint16_t* pDataBuf, uint32_t len)
 {
   HAL_I2S_Transmit_DMA(hAudioI2S, pDataBuf, DMA_MAX(len/SAMPLE_SIZE));
 }
@@ -124,7 +124,7 @@ void I2s_Resume(void)
  * @brief Stop audio
  */
 void 
-I2s_Stop(void)
+I2s_StopTransfer(void)
 {
   HAL_I2S_DMAStop(hAudioI2S);
 }

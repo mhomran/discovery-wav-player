@@ -27,11 +27,11 @@
 void I2s_SetHandle(I2S_HandleTypeDef *pI2Shandle);
 void I2s_Init(uint32_t audioFreq);
 
-void I2s_Play(uint16_t* pDataBuf, uint32_t len);
+void I2s_StartNewTransfer(uint16_t* pDataBuf, uint32_t len);
 void I2s_Pause(void);
 void I2s_Resume(void);
 void I2s_SetVolume(uint8_t volume);
-void I2s_Stop(void);
+void I2s_StopTransfer(void);
 
 void I2s_HalfTransferCallback(void);
 void I2s_FullTransferCallback(void);
