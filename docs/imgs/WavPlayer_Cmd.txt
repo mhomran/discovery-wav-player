@@ -1,0 +1,45 @@
+title Wav Player (Command)
+
+actor User
+materialdesignicons F0AF "Bluetooth\nModule (HC-05)" as bluetooth
+participant Uart Hardware
+participant Uart HAL
+participant HC-05
+participant WavPlayer
+participant I2s
+participant "CS43L22\n(Audio Codec)" as CS43L22
+materialdesignicons F2CB "Headphones" as headphones
+materialdesignicons F24B "FatFs\n(file system)" as filesystem
+participant "USB Host\n(Middleware)" as usbhost
+participant "USB Flash\ndrive" as flashdrive
+
+User->bluetooth:command
+bluetooth->Uart Hardware:Uart protocol
+
+Uart Hardware->Uart HAL:onReceive()
+Uart HAL->HC-05:HC05_Update()
+HC-05->WavPlayer:WavPlayer_Cmd()
+
+opt FatFs
+WavPlayer->filesystem: f_read()/f_findnext()/f_x
+filesystem->usbhost:USBH_X()
+usbhost->flashdrive:
+usbhost<--flashdrive:
+filesystem<--usbhost:
+filesystem-->WavPlayer:
+end
+
+opt I2S
+WavPlayer->I2s:I2s_Cmd()
+WavPlayer<--I2s:
+end
+
+opt CS43L22
+WavPlayer->CS43L22:CS43L22_Cmd()
+WavPlayer<--CS43L22:
+CS43L22->headphones:Audio
+end
+
+HC-05<--WavPlayer:
+Uart HAL<--HC-05:
+Uart Hardware<--Uart HAL:

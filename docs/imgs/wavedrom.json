@@ -1,0 +1,20 @@
+{signal: [
+  {name: "USB Bus", 							wave: 'x.=x..=|x..=x.|..=x.', data: ['D1', 'Data', 'D3', 'D4']},
+  {name: "File system (Fatfs) APIs", 			wave: '0.10..1|0..10.|..10.', node: '..np..f.g..........'},
+  {name: ""},
+  {name: "I2S_handler() (priority: 2)", 		wave: '01010.....1010|.1010', node: '..mq...............'},
+  {name: ""},
+  {name: 'WavPlayer_command()', 				wave: '0....10.10..........', node: '.....de.hi.........'},
+  {name: "Bluetooth_handler() (priority: 2)", 	wave: '0...10...10.........', node: '....bc...jk........'},
+  {name: 'User issuing command', 				wave: '0..10.....10........', node: '....a.....l........'},
+],
+  edge: [
+	'a->b', 'c->d', 'd->e', 'e->f', 'g->h', 'i->j', 'k->l', 'm->n','p->q'
+],
+head: {text:
+  ['tspan',
+    ['tspan', {class:'success h1'}, 'Sending Command '],
+  ]
+},
+}
+

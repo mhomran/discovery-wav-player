@@ -1,0 +1,23 @@
+title Wav Player (Initialisation)
+
+participant HC-05
+participant WavPlayer
+participant I2s
+participant "CS43L22\n(Audio Codec)" as CS43L22
+materialdesignicons F24B "FatFs\n(file system)" as filesystem
+participant "USB Module" as usbmod
+participant "USB Host\n(Middleware)" as usbhost
+
+usbhost->usbmod :onConnect()
+usbmod->filesystem:f_mount()
+usbmod<--filesystem:
+usbmod->CS43L22:CS43L22_Init()
+usbmod<--CS43L22:
+usbmod->I2s:I2s_Init()
+usbmod<--I2s:
+usbmod->WavPlayer:WavPlayer_Init()
+usbmod<--WavPlayer:
+usbmod->HC-05:HC05_Init()
+usbmod<--HC-05:
+usbhost<--usbmod:
+

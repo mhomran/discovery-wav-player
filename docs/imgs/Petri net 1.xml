@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><pnml>
+    <net id="Net-One" type="P/T net">
+        <token id="Default" enabled="true" red="0" green="0" blue="0"/>
+        <labels x="131" y="270" width="105" height="84" border="true">
+            <text>The transitions have enablers to be enabled. That also solves any conflict.</text>
+        </labels>
+        <place id="Audio file">
+            <graphics>
+                <position x="120.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value>Audio file</value>
+                <graphics>
+                    <offset x="-2.0" y="10.0"/>
+                </graphics>
+            </name>
+            <initialMarking>
+                <value>Default,1</value>
+                <graphics>
+                    <offset x="0.0" y="0.0"/>
+                </graphics>
+            </initialMarking>
+            <capacity>
+                <value>0</value>
+            </capacity>
+        </place>
+        <place id="Pause">
+            <graphics>
+                <position x="555.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value>Pause</value>
+                <graphics>
+                    <offset x="-42.0" y="41.0"/>
+                </graphics>
+            </name>
+            <initialMarking>
+                <value>Default,0</value>
+                <graphics>
+                    <offset x="0.0" y="0.0"/>
+                </graphics>
+            </initialMarking>
+            <capacity>
+                <value>0</value>
+            </capacity>
+        </place>
+        <place id="Playing">
+            <graphics>
+                <position x="405.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value>Playing</value>
+                <graphics>
+                    <offset x="0.0" y="0.0"/>
+                </graphics>
+            </name>
+            <initialMarking>
+                <value>Default,0</value>
+                <graphics>
+                    <offset x="0.0" y="0.0"/>
+                </graphics>
+            </initialMarking>
+            <capacity>
+                <value>0</value>
+            </capacity>
+        </place>
+        <place id="Ready">
+            <graphics>
+                <position x="255.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value>Ready</value>
+                <graphics>
+                    <offset x="1.0" y="2.0"/>
+                </graphics>
+            </name>
+            <initialMarking>
+                <value>Default,0</value>
+                <graphics>
+                    <offset x="0.0" y="0.0"/>
+                </graphics>
+            </initialMarking>
+            <capacity>
+                <value>0</value>
+            </capacity>
+        </place>
+        <transition id="">
+            <graphics>
+                <position x="180.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value/>
+                <graphics>
+                    <offset x="50.0" y="52.0"/>
+                </graphics>
+            </name>
+            <orientation>
+                <value>0</value>
+            </orientation>
+            <rate>
+                <value>1.0</value>
+            </rate>
+            <timed>
+                <value>false</value>
+            </timed>
+            <infiniteServer>
+                <value>false</value>
+            </infiniteServer>
+            <priority>
+                <value>1</value>
+            </priority>
+        </transition>
+        <transition id="Paused">
+            <graphics>
+                <position x="480.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value>Paused</value>
+                <graphics>
+                    <offset x="108.0" y="-8.0"/>
+                </graphics>
+            </name>
+            <orientation>
+                <value>0</value>
+            </orientation>
+            <rate>
+                <value>1.0</value>
+            </rate>
+            <timed>
+                <value>false</value>
+            </timed>
+            <infiniteServer>
+                <value>false</value>
+            </infiniteServer>
+            <priority>
+                <value>1</value>
+            </priority>
+        </transition>
+        <transition id="Resume">
+            <graphics>
+                <position x="330.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value>Resume</value>
+                <graphics>
+                    <offset x="39.0" y="47.0"/>
+                </graphics>
+            </name>
+            <orientation>
+                <value>0</value>
+            </orientation>
+            <rate>
+                <value>1.0</value>
+            </rate>
+            <timed>
+                <value>false</value>
+            </timed>
+            <infiniteServer>
+                <value>false</value>
+            </infiniteServer>
+            <priority>
+                <value>1</value>
+            </priority>
+        </transition>
+        <transition id="Resume_">
+            <graphics>
+                <position x="480.0" y="240.0"/>
+            </graphics>
+            <name>
+                <value>Resume_</value>
+                <graphics>
+                    <offset x="43.0" y="48.0"/>
+                </graphics>
+            </name>
+            <orientation>
+                <value>0</value>
+            </orientation>
+            <rate>
+                <value>1.0</value>
+            </rate>
+            <timed>
+                <value>false</value>
+            </timed>
+            <infiniteServer>
+                <value>false</value>
+            </infiniteServer>
+            <priority>
+                <value>1</value>
+            </priority>
+        </transition>
+        <transition id="Stop">
+            <graphics>
+                <position x="330.0" y="90.0"/>
+            </graphics>
+            <name>
+                <value>Stop</value>
+                <graphics>
+                    <offset x="26.0" y="-10.0"/>
+                </graphics>
+            </name>
+            <orientation>
+                <value>0</value>
+            </orientation>
+            <rate>
+                <value>1.0</value>
+            </rate>
+            <timed>
+                <value>false</value>
+            </timed>
+            <infiniteServer>
+                <value>false</value>
+            </infiniteServer>
+            <priority>
+                <value>1</value>
+            </priority>
+        </transition>
+        <transition id="Stop_">
+            <graphics>
+                <position x="615.0" y="180.0"/>
+            </graphics>
+            <name>
+                <value>Stop_</value>
+                <graphics>
+                    <offset x="32.0" y="52.0"/>
+                </graphics>
+            </name>
+            <orientation>
+                <value>0</value>
+            </orientation>
+            <rate>
+                <value>1.0</value>
+            </rate>
+            <timed>
+                <value>false</value>
+            </timed>
+            <infiniteServer>
+                <value>false</value>
+            </infiniteServer>
+            <priority>
+                <value>1</value>
+            </priority>
+        </transition>
+        <arc id="Audio file to " source="Audio file" target="">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="146" y="192" curvePoint="false"/>
+            <arcpath id="001" x="186" y="192" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Paused to Pause" source="Paused" target="Pause">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="496" y="192" curvePoint="false"/>
+            <arcpath id="001" x="552" y="192" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Pause to Resume_" source="Pause" target="Resume_">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="567" y="207" curvePoint="false"/>
+            <arcpath id="001" x="567" y="252" curvePoint="false"/>
+            <arcpath id="002" x="496" y="252" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Pause to Stop_" source="Pause" target="Stop_">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="581" y="192" curvePoint="false"/>
+            <arcpath id="001" x="621" y="192" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Playing to Paused" source="Playing" target="Paused">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="431" y="192" curvePoint="false"/>
+            <arcpath id="001" x="486" y="192" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Playing to Stop" source="Playing" target="Stop">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="417" y="177" curvePoint="false"/>
+            <arcpath id="001" x="417" y="102" curvePoint="false"/>
+            <arcpath id="002" x="346" y="102" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Ready to Resume" source="Ready" target="Resume">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="281" y="192" curvePoint="false"/>
+            <arcpath id="001" x="336" y="192" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Resume_ to Playing" source="Resume_" target="Playing">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="486" y="252" curvePoint="false"/>
+            <arcpath id="001" x="417" y="252" curvePoint="false"/>
+            <arcpath id="002" x="417" y="207" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Resume to Playing" source="Resume" target="Playing">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="346" y="192" curvePoint="false"/>
+            <arcpath id="001" x="402" y="192" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Stop_ to Ready" source="Stop_" target="Ready">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="631" y="192" curvePoint="false"/>
+            <arcpath id="001" x="672" y="192" curvePoint="false"/>
+            <arcpath id="002" x="672" y="327" curvePoint="false"/>
+            <arcpath id="003" x="282" y="327" curvePoint="false"/>
+            <arcpath id="004" x="267" y="327" curvePoint="false"/>
+            <arcpath id="005" x="267" y="207" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id="Stop to Ready" source="Stop" target="Ready">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="336" y="102" curvePoint="false"/>
+            <arcpath id="001" x="267" y="102" curvePoint="false"/>
+            <arcpath id="002" x="267" y="177" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+        <arc id=" to Ready" source="" target="Ready">
+            <graphics/>
+            <inscription>
+                <value>Default,1</value>
+                <graphics/>
+            </inscription>
+            <tagged>
+                <value>false</value>
+            </tagged>
+            <arcpath id="000" x="196" y="192" curvePoint="false"/>
+            <arcpath id="001" x="252" y="192" curvePoint="false"/>
+            <type value="normal"/>
+        </arc>
+    </net>
+</pnml>

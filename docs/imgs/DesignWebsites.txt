@@ -1,0 +1,3 @@
+https://sequencediagram.org/
+https://wavedrom.com/
+http://pipe2.sourceforge.net/
